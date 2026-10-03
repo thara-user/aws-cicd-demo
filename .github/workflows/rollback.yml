@@ -43,12 +43,21 @@ jobs:
             --recursive \
             --exclude "_releases/*"
 
-      - name: Restore selected release
+                - name: Restore selected release
         run: |
-          aws s3 sync \
-            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/ \
-            s3://${{ env.S3_BUCKET }}/ \
-            --exclude "_releases/*"
+          aws s3 cp \
+            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/index.html \
+            s3://${{ env.S3_BUCKET }}/index.html
+
+          aws s3 cp \
+            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/script.js \
+            s3://${{ env.S3_BUCKET }}/script.js
+
+          aws s3 cp \
+            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/style.css \
+            s3://${{ env.S3_BUCKET }}/style.css
+
+          echo "Release restored successfully."
 
       - name: Verify rollback
         run: |
