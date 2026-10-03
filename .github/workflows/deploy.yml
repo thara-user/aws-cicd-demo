@@ -36,6 +36,11 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Save release snapshot
+        run: |
+          aws s3 sync app/ s3://${{ env.S3_BUCKET }}/_releases/${{ github.sha }}/
+          echo "Release snapshot saved: ${{ github.sha }}"
+
       - name: Deploy application to S3
         run: |
           aws s3 sync app/ s3://${{ env.S3_BUCKET }} --delete
