@@ -43,7 +43,7 @@ jobs:
 
       - name: Deploy application to S3
         run: |
-          aws s3 sync app/ s3://${{ env.S3_BUCKET }} --delete
+          aws s3 sync app/ s3://${{ env.S3_BUCKET }} --delete --exclude "_releases/*"
 
       - name: Verify S3 deployment
         run: |
