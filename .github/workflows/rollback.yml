@@ -1,4 +1,3 @@
-
 name: Rollback AWS CI/CD Demo
 
 on:
@@ -23,6 +22,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -31,37 +33,61 @@ jobs:
 
       - name: Validate release snapshot
         run: |
-          echo "Checking release: ${{ inputs.release_sha }}"
+          aws s3 ls s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/
+          aws s3api head-object \
+            --bucket ${{ env.S3_BUCKET }} \
+            --key _releases/${{ inputs.release_sha }}/index.html
+          echo "Release snapshot exists."
 
-          aws s3 ls \
-            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/
+      - name: Download selected release
+        run: |
+          rm -rf release
+          mkdir release
+
+          aws s3 cp \
+            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/ \
+            ./release/ \
+            --recursive
+
+          test -f release/index.html
+          test -f release/script.js
+          test -f release/style.css
+
+          echo "Release downloaded successfully."
 
       - name: Remove current deployment
         run: |
-          aws s3 rm \
-            s3://${{ env.S3_BUCKET }}/ \
+          aws s3 rm s3://${{ env.S3_BUCKET }}/ \
             --recursive \
             --exclude "_releases/*"
 
-                - name: Restore selected release
+          echo "Current deployment removed."
+
+      - name: Restore selected release
         run: |
-          aws s3 cp \
-            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/index.html \
-            s3://${{ env.S3_BUCKET }}/index.html
-
-          aws s3 cp \
-            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/script.js \
-            s3://${{ env.S3_BUCKET }}/script.js
-
-          aws s3 cp \
-            s3://${{ env.S3_BUCKET }}/_releases/${{ inputs.release_sha }}/style.css \
-            s3://${{ env.S3_BUCKET }}/style.css
+          aws s3 cp ./release/ \
+            s3://${{ env.S3_BUCKET }}/ \
+            --recursive
 
           echo "Release restored successfully."
 
       - name: Verify rollback
         run: |
           aws s3 ls s3://${{ env.S3_BUCKET }}/
+
+          aws s3api head-object \
+            --bucket ${{ env.S3_BUCKET }} \
+            --key index.html
+
+          aws s3api head-object \
+            --bucket ${{ env.S3_BUCKET }} \
+            --key script.js
+
+          aws s3api head-object \
+            --bucket ${{ env.S3_BUCKET }} \
+            --key style.css
+
+          echo "Rollback files verified."
 
       - name: Health check
         run: |
