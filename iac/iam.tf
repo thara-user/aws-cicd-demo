@@ -40,11 +40,11 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
     }
 
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:thara-user/aws-cicd-demo:ref:refs/heads/main"
+        "repo:thara-user@170534854/aws-cicd-demo@1403308660:ref:refs/heads/main"
       ]
     }
   }
